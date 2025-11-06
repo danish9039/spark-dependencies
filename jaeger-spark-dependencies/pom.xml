@@ -124,6 +124,27 @@
                   </includes>
                 </filter>
                 <filter>
+                  <!-- Ensure shaded thirdparty httpclient classes in elasticsearch-hadoop are retained -->
+                  <artifact>org.elasticsearch:elasticsearch-hadoop</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <!-- OpenSearch Spark connector classes -->
+                  <artifact>org.opensearch.client:opensearch-spark-30_${version.scala.binary}</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <!-- OpenSearch Hadoop core classes -->
+                  <artifact>org.opensearch.client:opensearch-hadoop</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
                   <!-- elasticsearch -->
                   <artifact>commons-httpclient:commons-httpclient</artifact>
                   <includes>
