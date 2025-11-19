@@ -39,7 +39,7 @@ public final class DependenciesSparkJob {
 
     run(storage, date);
   }
-
+  //java testing 
   private static void run(String storage, LocalDate localDate) throws UnsupportedEncodingException {
     String peerServiceTag = System.getenv("PEER_SERVICE_TAG");
     if (peerServiceTag == null){
