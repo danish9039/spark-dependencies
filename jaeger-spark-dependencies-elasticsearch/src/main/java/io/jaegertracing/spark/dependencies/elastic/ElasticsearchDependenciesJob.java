@@ -267,10 +267,16 @@ public class ElasticsearchDependenciesJob {
         log.info("Running Dependencies job for {}, reading from {} index, result storing to {}", day, spanIndex, depIndex);
         // Send raw query to ES to select only the docs / spans we want to consider for this job
         // This doesn't change the default behavior as the daily indexes only contain up to 24h of data
-        String esQuery = String.format("{\"range\": {\"startTimeMillis\": { \"gte\": \"now-%s\" }}}", spanRange);
+        String esQuery = String.format(
+  "{\"bool\":{\"should\":[{\"range\":{\"startTime\":{\"gte\":\"now-%s\"}}},{\"range\":{\"startTimeMillis\":{\"gte\":\"now-%s\"}}}]}}",
+  spanRange, spanRange);
+   log.info("Executing ES query: {} on index: {}", esQuery, spanIndex);
         JavaPairRDD<String, Iterable<Span>> traces = JavaEsSpark.esJsonRDD(sc, spanIndex, esQuery)
             .map(new ElasticTupleToSpan())
             .groupBy(Span::getTraceId);
+            long traceCount = traces.count();
+    log.info("Loaded {} traces from Elasticsearch index {}", traceCount, spanIndex);
+    
         List<Dependency> dependencyLinks = DependenciesSparkHelper.derive(traces,peerServiceTag);
         EsMajorVersion esMajorVersion = getEsVersion();
         // Add type for ES < 7
