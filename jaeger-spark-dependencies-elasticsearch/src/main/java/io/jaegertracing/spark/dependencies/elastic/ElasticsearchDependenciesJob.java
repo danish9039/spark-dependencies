@@ -14,12 +14,6 @@
  */
 package io.jaegertracing.spark.dependencies.elastic;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jaegertracing.spark.dependencies.DependenciesSparkHelper;
-import io.jaegertracing.spark.dependencies.Utils;
-import io.jaegertracing.spark.dependencies.model.Dependency;
-import io.jaegertracing.spark.dependencies.model.Span;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -29,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -38,6 +33,14 @@ import org.elasticsearch.spark.cfg.SparkSettings;
 import org.elasticsearch.spark.rdd.api.java.JavaEsSpark;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.jaegertracing.spark.dependencies.DependenciesSparkHelper;
+import io.jaegertracing.spark.dependencies.Utils;
+import io.jaegertracing.spark.dependencies.model.Dependency;
+import io.jaegertracing.spark.dependencies.model.Span;
 
 /**
  * @author OpenZipkin authors
@@ -267,15 +270,23 @@ public class ElasticsearchDependenciesJob {
         log.info("Running Dependencies job for {}, reading from {} index, result storing to {}", day, spanIndex, depIndex);
         // Send raw query to ES to select only the docs / spans we want to consider for this job
         // This doesn't change the default behavior as the daily indexes only contain up to 24h of data
-        String esQuery = String.format(
-  "{\"bool\":{\"should\":[{\"range\":{\"startTime\":{\"gte\":\"now-%s\"}}},{\"range\":{\"startTimeMillis\":{\"gte\":\"now-%s\"}}}]}}",
-  spanRange, spanRange);
-   log.info("Executing ES query: {} on index: {}", esQuery, spanIndex);
-        JavaPairRDD<String, Iterable<Span>> traces = JavaEsSpark.esJsonRDD(sc, spanIndex, esQuery)
-            .map(new ElasticTupleToSpan())
-            .groupBy(Span::getTraceId);
-            long traceCount = traces.count();
-    log.info("Loaded {} traces from Elasticsearch index {}", traceCount, spanIndex);
+        // Build ES query with dual field support (v1 and v2 compatibility)
+String esQuery = String.format(
+    "{\"bool\":{\"should\":[" +
+        "{\"range\":{\"startTime\":{\"gte\":\"now-%s\"}}}," +
+        "{\"range\":{\"startTimeMillis\":{\"gte\":\"now-%s\"}}}" +
+    "]}}",
+    spanRange, spanRange);
+
+log.info("Executing ES query: {} on index: {}", esQuery, spanIndex);
+
+JavaPairRDD<String, Iterable<Span>> traces = JavaEsSpark.esJsonRDD(sc, spanIndex, esQuery)
+    .map(new ElasticTupleToSpan())
+    .groupBy(Span::getTraceId);
+
+long traceCount = traces.count();
+log.info("Loaded {} traces from Elasticsearch index {}", traceCount, spanIndex);
+
     
         List<Dependency> dependencyLinks = DependenciesSparkHelper.derive(traces,peerServiceTag);
         EsMajorVersion esMajorVersion = getEsVersion();
