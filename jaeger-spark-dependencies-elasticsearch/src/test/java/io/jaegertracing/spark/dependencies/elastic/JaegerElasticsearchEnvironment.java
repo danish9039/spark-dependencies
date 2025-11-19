@@ -50,7 +50,7 @@ public class JaegerElasticsearchEnvironment {
     String version = System.getProperty("elasticsearch.version", System.getenv("ELASTICSEARCH_VERSION"));
     return version != null ? version : "7.17.10";
   }
-
+  // new changes
   public void start(Map<String, String> jaegerEnvs, String jaegerVersion, String elasticsearchVersion) {
     network = Network.newNetwork();
     elasticsearch = new GenericContainer<>(String.format("docker.elastic.co/elasticsearch/elasticsearch:%s", elasticsearchVersion))

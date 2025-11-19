@@ -21,7 +21,7 @@ import java.net.URLDecoder;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
-
+//jvava test 
 public final class DependenciesSparkJob {
 
   public static void main(String[] args) throws UnsupportedEncodingException {
@@ -39,7 +39,7 @@ public final class DependenciesSparkJob {
 
     run(storage, date);
   }
-
+  //java testing 
   private static void run(String storage, LocalDate localDate) throws UnsupportedEncodingException {
     String peerServiceTag = System.getenv("PEER_SERVICE_TAG");
     if (peerServiceTag == null){
