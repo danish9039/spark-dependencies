@@ -53,7 +53,8 @@ public class JaegerElasticsearchEnvironment {
 
   public void start(Map<String, String> jaegerEnvs, String jaegerVersion, String elasticsearchVersion) {
     network = Network.newNetwork();
-    elasticsearch = new GenericContainer<>(String.format("docker.elastic.co/elasticsearch/elasticsearch:%s", elasticsearchVersion))
+    elasticsearch = new GenericContainer<>(
+        String.format("docker.elastic.co/elasticsearch/elasticsearch:%s", elasticsearchVersion))
         .withNetwork(network)
         .withNetworkAliases("elasticsearch")
         .waitingFor(new BoundPortHttpWaitStrategy(9200).forStatusCode(200))
@@ -72,7 +73,8 @@ public class JaegerElasticsearchEnvironment {
         .withEnv("COLLECTOR_ZIPKIN_HOST_PORT", ":9411")
         .withEnv("COLLECTOR_QUEUE_SIZE", "100000")
         .withEnv(jaegerEnvs)
-        .waitingFor(new BoundPortHttpWaitStrategy(14269).forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode < 300))
+        .waitingFor(new BoundPortHttpWaitStrategy(14269)
+            .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode < 300))
         // the first one is health check
         .withExposedPorts(14269, 14268, 9411);
     jaegerCollector.start();
@@ -83,35 +85,53 @@ public class JaegerElasticsearchEnvironment {
         .withEnv("ES_TAGS_AS_FIELDS_ALL", "true")
         .withNetwork(network)
         .withEnv(jaegerEnvs)
-        .waitingFor(new BoundPortHttpWaitStrategy(16687).forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode < 300))
+        .waitingFor(new BoundPortHttpWaitStrategy(16687)
+            .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode < 300))
         .withExposedPorts(16687, 16686);
     jaegerQuery.start();
 
-    collectorUrl = String.format("http://%s:%d", jaegerCollector.getContainerIpAddress(), jaegerCollector.getMappedPort(14268));
-    zipkinCollectorUrl = String.format("http://%s:%d", jaegerCollector.getContainerIpAddress(), jaegerCollector.getMappedPort(9411));
+    collectorUrl = String.format("http://%s:%d", jaegerCollector.getContainerIpAddress(),
+        jaegerCollector.getMappedPort(14268));
+    zipkinCollectorUrl = String.format("http://%s:%d", jaegerCollector.getContainerIpAddress(),
+        jaegerCollector.getMappedPort(9411));
     queryUrl = String.format("http://%s:%d", jaegerQuery.getContainerIpAddress(), jaegerQuery.getMappedPort(16686));
   }
 
   public void cleanUp(String[] spanIndex, String[] dependenciesIndex) throws IOException {
-      String matchAllQuery = "{\"query\": {\"match_all\":{} }}";
-      Request request = new Request.Builder()
-          .url(String.format("http://%s:%d/%s,%s/_delete_by_query?conflicts=proceed",
-              elasticsearch.getContainerIpAddress(),
-              elasticsearch.getMappedPort(9200),
-              // we don't use index prefix
-              spanIndex[0],
-              dependenciesIndex[0]))
-          .post(
-              RequestBody.create(MediaType.parse("application/json; charset=utf-8"), matchAllQuery))
-          .build();
+    String matchAllQuery = "{\"query\": {\"match_all\":{} }}";
+    Request request = new Request.Builder()
+        .url(String.format("http://%s:%d/%s,%s/_delete_by_query?conflicts=proceed",
+            elasticsearch.getContainerIpAddress(),
+            elasticsearch.getMappedPort(9200),
+            // we don't use index prefix
+            spanIndex[0],
+            dependenciesIndex[0]))
+        .post(
+            RequestBody.create(MediaType.parse("application/json; charset=utf-8"), matchAllQuery))
+        .build();
 
-
-      try (Response response =  okHttpClient.newCall(request).execute()) {
-        if (!response.isSuccessful()) {
-          String body = response.body().string();
-          throw new IllegalStateException(String.format("Could not remove data from ES: %s, %s", response, body));
-        }
+    try (Response response = okHttpClient.newCall(request).execute()) {
+      if (!response.isSuccessful()) {
+        String body = response.body().string();
+        throw new IllegalStateException(String.format("Could not remove data from ES: %s, %s", response, body));
       }
+    }
+  }
+
+  public void refresh() throws IOException {
+    Request request = new Request.Builder()
+        .url(String.format("http://%s:%d/_refresh",
+            elasticsearch.getContainerIpAddress(),
+            elasticsearch.getMappedPort(9200)))
+        .post(RequestBody.create(MediaType.parse("application/json; charset=utf-8"), ""))
+        .build();
+
+    try (Response response = okHttpClient.newCall(request).execute()) {
+      if (!response.isSuccessful()) {
+        String body = response.body().string();
+        throw new IllegalStateException(String.format("Could not refresh ES: %s, %s", response, body));
+      }
+    }
   }
 
   public void stop() {

@@ -78,8 +78,11 @@ public class ElasticsearchDependenciesJobTest extends DependenciesTest {
 
   @Override
   protected void waitBetweenTraces() throws InterruptedException {
-    // TODO otherwise elastic drops some spans
-    Thread.sleep(5000);
+    try {
+      jaegerElasticsearchEnvironment.refresh();
+    } catch (IOException e) {
+      throw new RuntimeException("Could not refresh Elasticsearch", e);
+    }
   }
 
   public static class BoundPortHttpWaitStrategy extends HttpWaitStrategy {
