@@ -73,11 +73,6 @@ public class ElasticsearchDependenciesJobTest extends DependenciesTest {
         .nodes("http://" + jaegerElasticsearchEnvironment.getElasticsearchIPPort())
         .day(LocalDate.now())
         .build();
-    try {
-      jaegerElasticsearchEnvironment.refresh();
-    } catch (IOException e) {
-      throw new RuntimeException("Could not refresh Elasticsearch", e);
-    }
     dependenciesJob.run("peer.service");
     try {
       jaegerElasticsearchEnvironment.refresh();
