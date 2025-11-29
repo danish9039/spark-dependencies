@@ -45,9 +45,9 @@ jobs:
       - name: pull ryuk image
         run: docker pull testcontainersofficial/ryuk:0.3.0
       - name: compile
-        run: ./mvnw --batch-mode clean install -DskipTests -Dversion.elasticsearch.spark=7.17.10
+        run: ./mvnw --batch-mode clean install -DskipTests -Dversion.elasticsearch.spark=8.13.4
       - name: test
-        run: ELASTICSEARCH_VERSION=7.3.0 ./mvnw --batch-mode test -pl jaeger-spark-dependencies-elasticsearch -Dversion.elasticsearch.spark=7.17.10
+        run: ELASTICSEARCH_VERSION=7.3.0 ./mvnw --batch-mode test -pl jaeger-spark-dependencies-elasticsearch -Dversion.elasticsearch.spark=8.13.4
 
   latest-jaeger-es8:
     name: Latest Jaeger and ES8
