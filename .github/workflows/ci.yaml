@@ -47,7 +47,7 @@ jobs:
       - name: compile
         run: ./mvnw --batch-mode clean install -DskipTests
       - name: test
-        run: ELASTICSEARCH_VERSION=7.3.0 ./mvnw --batch-mode test -pl jaeger-spark-dependencies-elasticsearch
+        run: ELASTICSEARCH_VERSION=7.3.0 ./mvnw --batch-mode test -pl jaeger-spark-dependencies-elasticsearch -Dversion.elasticsearch.spark=7.17.10
 
   latest-jaeger-es8:
     name: Latest Jaeger and ES8
@@ -64,7 +64,7 @@ jobs:
       - name: compile
         run: ./mvnw --batch-mode clean install -DskipTests
       - name: test
-        run: ELASTICSEARCH_VERSION=8.3.1 ./mvnw --batch-mode test -pl jaeger-spark-dependencies-elasticsearch
+        run: ELASTICSEARCH_VERSION=8.3.1 ./mvnw --batch-mode test -pl jaeger-spark-dependencies-elasticsearch -Dversion.elasticsearch.spark=8.3.1
 
   latest-jaeger-es9:
     name: Latest Jaeger and ES9
