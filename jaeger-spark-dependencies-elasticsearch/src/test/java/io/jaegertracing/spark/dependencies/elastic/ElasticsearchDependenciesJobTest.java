@@ -74,6 +74,11 @@ public class ElasticsearchDependenciesJobTest extends DependenciesTest {
         .day(LocalDate.now())
         .build();
     dependenciesJob.run("peer.service");
+    try {
+      jaegerElasticsearchEnvironment.refresh();
+    } catch (IOException e) {
+      throw new RuntimeException("Could not refresh Elasticsearch", e);
+    }
   }
 
   @Override
