@@ -17,17 +17,32 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jaegertracing.spark.dependencies.elastic.json.JsonHelper;
 import io.jaegertracing.spark.dependencies.model.Span;
 import org.apache.spark.api.java.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 /**
  * @author Pavol Loffay
  */
 public class ElasticTupleToSpan implements Function<Tuple2<String, String>, Span> {
-
+  private static final Logger log = LoggerFactory.getLogger(ElasticTupleToSpan.class);
   private ObjectMapper objectMapper = JsonHelper.configure(new ObjectMapper());
 
   @Override
   public Span call(Tuple2<String, String> tuple) throws Exception {
-    return objectMapper.readValue(tuple._2(), Span.class);
+    Span span = objectMapper.readValue(tuple._2(), Span.class);
+    String originalTraceId = span.getTraceId();
+    span.setTraceId(normalizeTraceId(originalTraceId));
+    if (log.isDebugEnabled()) {
+      log.debug("Normalized traceId {} -> {}", originalTraceId, span.getTraceId());
+    }
+    return span;
+  }
+
+  private String normalizeTraceId(String traceId) {
+    if (traceId != null && traceId.length() < 32) {
+      return String.format("%32s", traceId).replace(' ', '0');
+    }
+    return traceId;
   }
 }
