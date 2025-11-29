@@ -288,7 +288,6 @@ public class ElasticsearchDependenciesJob {
         JavaPairRDD<String, Iterable<Span>> traces = JavaEsSpark.esJsonRDD(sc, spanIndex, esQuery)
             .map(new ElasticTupleToSpan())
             .groupBy(Span::getTraceId);
-        log.info("Read {} traces from index {}", traces.count(), spanIndex);
         List<Dependency> dependencyLinks = DependenciesSparkHelper.derive(traces, peerServiceTag);
         EsMajorVersion esMajorVersion = getEsVersion();
         // Add type for ES < 7
