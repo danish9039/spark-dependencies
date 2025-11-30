@@ -13,7 +13,6 @@
  */
 package io.jaegertracing.spark.dependencies.elastic;
 
-
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.spark.dependencies.test.DependenciesTest;
 import io.jaegertracing.spark.dependencies.test.TracersGenerator;
@@ -42,7 +41,8 @@ public class ElasticsearchDependenciesJobTest extends DependenciesTest {
   @BeforeClass
   public static void beforeClass() {
     jaegerElasticsearchEnvironment = new JaegerElasticsearchEnvironment();
-    jaegerElasticsearchEnvironment.start(new HashMap<>(), jaegerVersion(), JaegerElasticsearchEnvironment.elasticsearchVersion());
+    jaegerElasticsearchEnvironment.start(new HashMap<>(), jaegerVersion(),
+        JaegerElasticsearchEnvironment.elasticsearchVersion());
     collectorUrl = jaegerElasticsearchEnvironment.getCollectorUrl();
     zipkinCollectorUrl = jaegerElasticsearchEnvironment.getZipkinCollectorUrl();
     queryUrl = jaegerElasticsearchEnvironment.getQueryUrl();
@@ -58,7 +58,8 @@ public class ElasticsearchDependenciesJobTest extends DependenciesTest {
 
   @After
   public void after() throws IOException {
-    jaegerElasticsearchEnvironment.cleanUp(dependenciesJob.indexDate("jaeger-span"), dependenciesJob.indexDate("jaeger-dependencies"));
+    jaegerElasticsearchEnvironment.cleanUp(dependenciesJob.indexDate("jaeger-span"),
+        dependenciesJob.indexDate("jaeger-dependencies"));
   }
 
   @AfterClass
@@ -72,13 +73,26 @@ public class ElasticsearchDependenciesJobTest extends DependenciesTest {
         .nodes("http://" + jaegerElasticsearchEnvironment.getElasticsearchIPPort())
         .day(LocalDate.now())
         .build();
+    try {
+      jaegerElasticsearchEnvironment.refresh();
+    } catch (IOException e) {
+      throw new RuntimeException("Could not refresh Elasticsearch", e);
+    }
     dependenciesJob.run("peer.service");
+    try {
+      jaegerElasticsearchEnvironment.refresh();
+    } catch (IOException e) {
+      throw new RuntimeException("Could not refresh Elasticsearch", e);
+    }
   }
 
   @Override
   protected void waitBetweenTraces() throws InterruptedException {
-    // TODO otherwise elastic drops some spans
-    TimeUnit.SECONDS.sleep(2);
+    try {
+      jaegerElasticsearchEnvironment.refresh();
+    } catch (IOException e) {
+      throw new RuntimeException("Could not refresh Elasticsearch", e);
+    }
   }
 
   public static class BoundPortHttpWaitStrategy extends HttpWaitStrategy {
