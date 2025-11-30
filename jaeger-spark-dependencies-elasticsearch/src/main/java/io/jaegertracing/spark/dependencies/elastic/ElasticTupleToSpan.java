@@ -33,8 +33,17 @@ public class ElasticTupleToSpan implements Function<Tuple2<String, String>, Span
     Span span = objectMapper.readValue(tuple._2(), Span.class);
     String originalTraceId = span.getTraceId();
     span.setTraceId(normalizeTraceId(originalTraceId));
-    if (log.isDebugEnabled()) {
-      log.debug("Normalized traceId {} -> {}", originalTraceId, span.getTraceId());
+    if (log.isInfoEnabled()) {
+      String refsStr = "null";
+      if (span.getRefs() != null) {
+        refsStr = span.getRefs().stream()
+            .map(r -> String.valueOf(r.getSpanId()))
+            .collect(java.util.stream.Collectors.joining(","));
+      }
+      String serviceName = (span.getProcess() != null) ? span.getProcess().getServiceName() : "null";
+      String tagsStr = (span.getTags() != null) ? span.getTags().toString() : "null";
+      log.info("SpanId: {}, Original TraceId: {}, Normalized TraceId: {}, Refs: {}, ServiceName: {}, Tags: {}",
+          span.getSpanId(), originalTraceId, span.getTraceId(), refsStr, serviceName, tagsStr);
     }
     return span;
   }
