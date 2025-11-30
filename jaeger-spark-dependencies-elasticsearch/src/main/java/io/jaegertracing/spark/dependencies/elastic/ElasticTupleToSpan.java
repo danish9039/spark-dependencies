@@ -42,8 +42,9 @@ public class ElasticTupleToSpan implements Function<Tuple2<String, String>, Span
       }
       String serviceName = (span.getProcess() != null) ? span.getProcess().getServiceName() : "null";
       String tagsStr = (span.getTags() != null) ? span.getTags().toString() : "null";
-      log.info("SpanId: {}, Original TraceId: {}, Normalized TraceId: {}, Refs: {}, ServiceName: {}, Tags: {}",
-          span.getSpanId(), originalTraceId, span.getTraceId(), refsStr, serviceName, tagsStr);
+      System.out.println(
+          String.format("SpanId: %s, Original TraceId: %s, Normalized TraceId: %s, Refs: %s, ServiceName: %s, Tags: %s",
+              span.getSpanId(), originalTraceId, span.getTraceId(), refsStr, serviceName, tagsStr));
     }
     return span;
   }

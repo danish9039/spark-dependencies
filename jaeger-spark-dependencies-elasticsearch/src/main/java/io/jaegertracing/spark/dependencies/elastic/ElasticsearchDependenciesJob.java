@@ -244,7 +244,7 @@ public class ElasticsearchDependenciesJob {
   }
 
   public void run(String peerServiceTag) {
-    log.info("Starting Dependencies Job run");
+    System.out.println("Starting Dependencies Job run");
     String[] readIndices;
     String[] writeIndex;
 
