@@ -301,10 +301,20 @@ public class ElasticsearchDependenciesJob {
                     .collect(java.util.stream.Collectors.joining(","));
               }
               String serviceName = (span.getProcess() != null) ? span.getProcess().getServiceName() : "null";
-              String tagsStr = (span.getTags() != null) ? span.getTags().toString() : "null";
-              System.err
-                  .println(String.format("DRIVER DEBUG - SpanId: %s, TraceId: %s, Refs: %s, ServiceName: %s, Tags: %s",
-                      span.getSpanId(), span.getTraceId(), refsStr, serviceName, tagsStr));
+
+              StringBuilder tagsBuilder = new StringBuilder("[");
+              if (span.getTags() != null) {
+                for (io.jaegertracing.spark.dependencies.model.KeyValue kv : span.getTags()) {
+                  tagsBuilder
+                      .append(String.format("{k:%s,v:%s,t:%s},", kv.getKey(), kv.getValueString(), kv.getValueType()));
+                }
+              }
+              tagsBuilder.append("]");
+
+              System.err.println(String.format(
+                  "DRIVER DEBUG - SpanId: %s, TraceId: %s, StartTime: %d, Refs: %s, ServiceName: %s, Tags: %s",
+                  span.getSpanId(), span.getTraceId(), span.getStartTime(), refsStr, serviceName,
+                  tagsBuilder.toString()));
             }
           }
         } catch (Exception e) {
