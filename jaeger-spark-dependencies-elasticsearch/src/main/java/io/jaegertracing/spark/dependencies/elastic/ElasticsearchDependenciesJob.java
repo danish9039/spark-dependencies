@@ -244,7 +244,6 @@ public class ElasticsearchDependenciesJob {
   }
 
   public void run(String peerServiceTag) {
-    System.err.println("Starting Dependencies Job run");
     String[] readIndices;
     String[] writeIndex;
 
@@ -288,39 +287,6 @@ public class ElasticsearchDependenciesJob {
         JavaPairRDD<String, Iterable<Span>> traces = JavaEsSpark.esJsonRDD(sc, spanIndex, esQuery)
             .map(new ElasticTupleToSpan())
             .groupBy(Span::getTraceId);
-
-        try {
-          List<scala.Tuple2<String, Iterable<Span>>> debugTraces = traces.collect();
-          System.err.println("DEBUG: Collected " + debugTraces.size() + " traces on driver");
-          for (scala.Tuple2<String, Iterable<Span>> tuple : debugTraces) {
-            for (Span span : tuple._2()) {
-              String refsStr = "null";
-              if (span.getRefs() != null) {
-                refsStr = span.getRefs().stream()
-                    .map(r -> String.valueOf(r.getSpanId()))
-                    .collect(java.util.stream.Collectors.joining(","));
-              }
-              String serviceName = (span.getProcess() != null) ? span.getProcess().getServiceName() : "null";
-
-              StringBuilder tagsBuilder = new StringBuilder("[");
-              if (span.getTags() != null) {
-                for (io.jaegertracing.spark.dependencies.model.KeyValue kv : span.getTags()) {
-                  tagsBuilder
-                      .append(String.format("{k:%s,v:%s,t:%s},", kv.getKey(), kv.getValueString(), kv.getValueType()));
-                }
-              }
-              tagsBuilder.append("]");
-
-              System.err.println(String.format(
-                  "DRIVER DEBUG - SpanId: %s, TraceId: %s, StartTime: %d, Refs: %s, ServiceName: %s, Tags: %s",
-                  span.getSpanId(), span.getTraceId(), span.getStartTime(), refsStr, serviceName,
-                  tagsBuilder.toString()));
-            }
-          }
-        } catch (Exception e) {
-          System.err.println("DEBUG: Failed to collect traces: " + e.getMessage());
-          e.printStackTrace();
-        }
 
         List<Dependency> dependencyLinks = DependenciesSparkHelper.derive(traces, peerServiceTag);
         EsMajorVersion esMajorVersion = getEsVersion();
