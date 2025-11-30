@@ -40,8 +40,9 @@ public class ElasticTupleToSpan implements Function<Tuple2<String, String>, Span
             .map(r -> String.valueOf(r.getSpanId()))
             .collect(java.util.stream.Collectors.joining(","));
       }
-      log.info("SpanId: {}, Original TraceId: {}, Normalized TraceId: {}, Refs: {}",
-          span.getSpanId(), originalTraceId, span.getTraceId(), refsStr);
+      String serviceName = (span.getProcess() != null) ? span.getProcess().getServiceName() : "null";
+      log.info("SpanId: {}, Original TraceId: {}, Normalized TraceId: {}, Refs: {}, ServiceName: {}",
+          span.getSpanId(), originalTraceId, span.getTraceId(), refsStr, serviceName);
     }
     return span;
   }
