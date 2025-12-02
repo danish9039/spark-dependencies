@@ -80,7 +80,8 @@ public class ElasticsearchDependenciesJob {
 
     }
 
-    // local[*] master lets us run & test the job locally without setting a Spark cluster
+    // local[*] master lets us run & test the job locally without setting a Spark
+    // cluster
     String sparkMaster = Utils.getEnv("SPARK_MASTER", "local[*]");
     // needed when not in local mode
     String[] jars;
@@ -102,13 +103,19 @@ public class ElasticsearchDependenciesJob {
       return this;
     }
 
-    /** username used for basic auth. Needed when Shield or X-Pack security is enabled */
+    /**
+     * username used for basic auth. Needed when Shield or X-Pack security is
+     * enabled
+     */
     public Builder username(String username) {
       this.username = username;
       return this;
     }
 
-    /** password used for basic auth. Needed when Shield or X-Pack security is enabled */
+    /**
+     * password used for basic auth. Needed when Shield or X-Pack security is
+     * enabled
+     */
     public Builder password(String password) {
       this.password = password;
       return this;
@@ -126,7 +133,7 @@ public class ElasticsearchDependenciesJob {
       return this;
     }
 
-     /** span range for Jaeger indices. By default 24h */
+    /** span range for Jaeger indices. By default 24h */
     public Builder spanRange(String spanRange) {
       this.spanRange = spanRange;
       return this;
@@ -138,10 +145,15 @@ public class ElasticsearchDependenciesJob {
       return this;
     }
 
-    /** Whether the connector is used against an Elasticsearch instance in a cloud/restricted
-     *  environment over the WAN, such as Amazon Web Services. In this mode, the
-     *  connector disables discovery and only connects through the declared es.nodes during all operations,
-     *  including reads and writes. Note that in this mode, performance is highly affected. */
+    /**
+     * Whether the connector is used against an Elasticsearch instance in a
+     * cloud/restricted
+     * environment over the WAN, such as Amazon Web Services. In this mode, the
+     * connector disables discovery and only connects through the declared es.nodes
+     * during all operations,
+     * including reads and writes. Note that in this mode, performance is highly
+     * affected.
+     */
     public Builder nodesWanOnly(boolean wanOnly) {
       this.nodesWanOnly = wanOnly;
       return this;
@@ -232,16 +244,16 @@ public class ElasticsearchDependenciesJob {
   }
 
   public void run(String peerServiceTag) {
-
     String[] readIndices;
     String[] writeIndex;
 
     // use alias indices common when using index rollover
     if (this.useAliases) {
-      readIndices = new String[]{prefix(indexPrefix) + "jaeger-span-read", prefixBefore19(indexPrefix) + "jaeger-span-read"};
-      writeIndex = new String[] {prefix(indexPrefix) + "jaeger-dependencies-write", prefixBefore19(indexPrefix) + "jaeger-dependencies-write"};
-    }
-    else {
+      readIndices = new String[] { prefix(indexPrefix) + "jaeger-span-read",
+          prefixBefore19(indexPrefix) + "jaeger-span-read" };
+      writeIndex = new String[] { prefix(indexPrefix) + "jaeger-dependencies-write",
+          prefixBefore19(indexPrefix) + "jaeger-dependencies-write" };
+    } else {
       readIndices = indexDate("jaeger-span");
       writeIndex = indexDate("jaeger-dependencies");
     }
@@ -252,37 +264,46 @@ public class ElasticsearchDependenciesJob {
   String[] indexDate(String index) {
     String date = day.toLocalDate().format(DateTimeFormatter.ofPattern(indexDatePattern));
     if (indexPrefix != null && indexPrefix.length() > 0) {
-      return new String[]{String.format("%s%s-%s", prefix(indexPrefix), index, date), String.format("%s%s-%s", prefixBefore19(indexPrefix), index, date)};
+      return new String[] { String.format("%s%s-%s", prefix(indexPrefix), index, date),
+          String.format("%s%s-%s", prefixBefore19(indexPrefix), index, date) };
     }
     // if there is no prefix we read and write only to one index
-    return new String[]{String.format("%s-%s", index, date)};
+    return new String[] { String.format("%s-%s", index, date) };
   }
 
-  void run(String[] spanIndices, String[] depIndices,String peerServiceTag) {
+  void run(String[] spanIndices, String[] depIndices, String peerServiceTag) {
     JavaSparkContext sc = new JavaSparkContext(conf);
     try {
       for (int i = 0; i < spanIndices.length; i++) {
         String spanIndex = spanIndices[i];
         String depIndex = depIndices[i];
-        log.info("Running Dependencies job for {}, reading from {} index, result storing to {}", day, spanIndex, depIndex);
-        // Send raw query to ES to select only the docs / spans we want to consider for this job
-        // This doesn't change the default behavior as the daily indexes only contain up to 24h of data
+        log.info("Running Dependencies job for {}, reading from {} index, result storing to {}", day, spanIndex,
+            depIndex);
+        // Send raw query to ES to select only the docs / spans we want to consider for
+        // this job
+        // This doesn't change the default behavior as the daily indexes only contain up
+        // to 24h of data
         String esQuery = String.format("{\"range\": {\"startTimeMillis\": { \"gte\": \"now-%s\" }}}", spanRange);
         JavaPairRDD<String, Iterable<Span>> traces = JavaEsSpark.esJsonRDD(sc, spanIndex, esQuery)
             .map(new ElasticTupleToSpan())
             .groupBy(Span::getTraceId);
-        List<Dependency> dependencyLinks = DependenciesSparkHelper.derive(traces,peerServiceTag);
+
+        List<Dependency> dependencyLinks = DependenciesSparkHelper.derive(traces, peerServiceTag);
         EsMajorVersion esMajorVersion = getEsVersion();
         // Add type for ES < 7
-        // WARN log is produced for older ES versions, however it's produced by spark-es library and not ES itself, it cannot be disabled
-        //  WARN Resource: Detected type name in resource [jaeger-dependencies-2019-08-14/dependencies]. Type names are deprecated and will be removed in a later release.
+        // WARN log is produced for older ES versions, however it's produced by spark-es
+        // library and not ES itself, it cannot be disabled
+        // WARN Resource: Detected type name in resource
+        // [jaeger-dependencies-2019-08-14/dependencies]. Type names are deprecated and
+        // will be removed in a later release.
         if (esMajorVersion.before(EsMajorVersion.V_7_X)) {
           depIndex = depIndex + "/dependencies";
         }
         store(sc, dependencyLinks, depIndex);
         log.info("Done, {} dependency objects created", dependencyLinks.size());
         if (dependencyLinks.size() > 0) {
-          // we do not derive dependencies for old prefix "prefix:" if new prefix "prefix-" contains data
+          // we do not derive dependencies for old prefix "prefix:" if new prefix
+          // "prefix-" contains data
           break;
         }
       }

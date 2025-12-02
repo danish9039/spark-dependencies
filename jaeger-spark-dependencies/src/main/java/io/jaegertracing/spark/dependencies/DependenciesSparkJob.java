@@ -25,6 +25,7 @@ import java.util.Map;
 public final class DependenciesSparkJob {
 
   public static void main(String[] args) throws UnsupportedEncodingException {
+    // Trigger CI
     String storage = System.getenv("STORAGE");
     if (storage == null) {
       throw new IllegalArgumentException("Missing environmental variable STORAGE");
@@ -42,7 +43,7 @@ public final class DependenciesSparkJob {
 
   private static void run(String storage, LocalDate localDate) throws UnsupportedEncodingException {
     String peerServiceTag = System.getenv("PEER_SERVICE_TAG");
-    if (peerServiceTag == null){
+    if (peerServiceTag == null) {
       peerServiceTag = "peer.service";
     }
     String jarPath = pathToUberJar();
