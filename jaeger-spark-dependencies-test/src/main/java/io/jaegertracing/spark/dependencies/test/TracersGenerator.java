@@ -18,7 +18,6 @@ import brave.sampler.Sampler;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.JaegerTracer.Builder;
 import io.jaegertracing.internal.exceptions.SenderException;
-import io.jaegertracing.internal.metrics.Metrics;
 import io.jaegertracing.internal.reporters.RemoteReporter;
 import io.jaegertracing.internal.samplers.ConstSampler;
 import io.jaegertracing.spark.dependencies.test.tree.TracingWrapper;
@@ -80,9 +79,9 @@ public class TracersGenerator {
 
     public TracingWrapper tracingWrapper() {
       if (tracer instanceof Tracing) {
-        return new ZipkinWrapper((brave.Tracing)tracer, serviceName);
+        return new ZipkinWrapper((brave.Tracing) tracer, serviceName);
       }
-      return new JaegerWrapper((io.jaegertracing.internal.JaegerTracer)tracer);
+      return new JaegerWrapper((io.jaegertracing.internal.JaegerTracer) tracer);
     }
 
     public Flushable flushable() {
@@ -90,7 +89,8 @@ public class TracersGenerator {
     }
   }
 
-  public static List<TracerHolder<JaegerTracer>> generateJaeger(int number, String collectorUrl) throws TTransportException {
+  public static List<TracerHolder<JaegerTracer>> generateJaeger(int number, String collectorUrl)
+      throws TTransportException {
     List<TracerHolder<JaegerTracer>> tracers = new ArrayList<>(number);
     for (int i = 0; i < number; i++) {
       String serviceName = serviceName();
@@ -100,7 +100,8 @@ public class TracersGenerator {
     return tracers;
   }
 
-  public static Tuple<JaegerTracer, Flushable> createJaeger(String serviceName, String collectorUrl) throws TTransportException {
+  public static Tuple<JaegerTracer, Flushable> createJaeger(String serviceName, String collectorUrl)
+      throws TTransportException {
     HttpSender sender = new HttpSender.Builder(collectorUrl + "/api/traces").build();
     RemoteReporter reporter = new RemoteReporter.Builder()
         .withSender(sender)
@@ -110,14 +111,15 @@ public class TracersGenerator {
     return new Tuple<>(new Builder(serviceName)
         .withReporter(reporter)
         .withSampler(new ConstSampler(true))
+        .withTraceId128Bit()
         .build(),
         () -> {
-      try {
-        sender.flush();
-      } catch (SenderException ex) {
-        throw new IllegalStateException("Failed to send", ex);
-      }
-    });
+          try {
+            sender.flush();
+          } catch (SenderException ex) {
+            throw new IllegalStateException("Failed to send", ex);
+          }
+        });
   }
 
   public static List<TracerHolder<Tracing>> generateZipkin(int number, String collectorUrl) {
@@ -132,9 +134,9 @@ public class TracersGenerator {
 
   public static Tuple<Tracing, Flushable> createZipkin(String serviceName, String collectorUrl) {
     Sender sender = OkHttpSender.builder()
-      .endpoint(collectorUrl + "/api/v1/spans")
-      .encoding(Encoding.JSON)
-      .build();
+        .endpoint(collectorUrl + "/api/v1/spans")
+        .encoding(Encoding.JSON)
+        .build();
 
     AsyncReporter<Span> reporter = AsyncReporter.builder(sender)
         .closeTimeout(1, TimeUnit.MILLISECONDS)
