@@ -36,7 +36,8 @@ import java.util.stream.Collectors;
  */
 public class SpanDeserializer extends StdDeserializer<Span> {
 
-  // TODO Spark incorrectly serializes object mapper, therefore reinitializing here
+  // TODO Spark incorrectly serializes object mapper, therefore reinitializing
+  // here
   private ObjectMapper objectMapper = JsonHelper.configure(new ObjectMapper());
 
   public SpanDeserializer() {
@@ -70,6 +71,7 @@ public class SpanDeserializer extends StdDeserializer<Span> {
     span.setStartTime(startTimeStr != null ? Long.parseLong(startTimeStr) : null);
     span.setProcess(process);
     span.setTags(tags);
+
     return span;
   }
 
@@ -98,8 +100,8 @@ public class SpanDeserializer extends StdDeserializer<Span> {
 
     JsonNode referencesNode = node.get("references");
     if (!referencesNode.isNull()) {
-        Reference[] referencesArr = objectMapper.treeToValue(referencesNode, Reference[].class);
-        references.addAll(Arrays.asList(referencesArr));
+      Reference[] referencesArr = objectMapper.treeToValue(referencesNode, Reference[].class);
+      references.addAll(Arrays.asList(referencesArr));
     }
 
     return references;

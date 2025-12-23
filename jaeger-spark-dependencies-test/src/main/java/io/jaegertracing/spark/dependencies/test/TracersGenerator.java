@@ -71,7 +71,7 @@ public class TracersGenerator {
     }
 
     public TracingWrapper tracingWrapper() {
-      return new OpenTelemetryWrapper((Tracer)tracer, serviceName);
+      return new OpenTelemetryWrapper((Tracer) tracer, serviceName);
     }
 
     public Flushable flushable() {
@@ -94,7 +94,7 @@ public class TracersGenerator {
     // collectorUrl is in format "http://host:port"
     String host = "localhost";
     int port = 4317; // default
-    
+
     try {
       // Parse the URL to extract host and port
       String urlStr = collectorUrl;
@@ -118,9 +118,10 @@ public class TracersGenerator {
         host = urlStr;
       }
     } catch (Exception e) {
-      System.err.println("[ERROR TracersGenerator] Failed to parse collectorUrl: " + collectorUrl + ", error: " + e.getMessage());
+      System.err.println(
+          "[ERROR TracersGenerator] Failed to parse collectorUrl: " + collectorUrl + ", error: " + e.getMessage());
     }
-    
+
     // Reconstruct endpoint in the format expected by gRPC exporter
     String otlpEndpoint = "http://" + host + ":" + port;
 
@@ -162,7 +163,10 @@ public class TracersGenerator {
         });
   }
 
+  private static final java.util.concurrent.atomic.AtomicInteger serviceNameCounter = new java.util.concurrent.atomic.AtomicInteger(
+      0);
+
   private static String serviceName() {
-    return UUID.randomUUID().toString().replace("-", "");
+    return "service-" + serviceNameCounter.getAndIncrement();
   }
 }
