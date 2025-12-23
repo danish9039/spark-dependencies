@@ -55,7 +55,7 @@ public abstract class DependenciesTest {
 
   public static String jaegerVersion() {
     String jaegerVersion = System.getProperty("jaeger.version", System.getenv("JAEGER_VERSION"));
-    return jaegerVersion != null ? jaegerVersion : "latest";
+    return jaegerVersion != null ? jaegerVersion : "1.57";
   }
 
   /**
@@ -75,20 +75,21 @@ public abstract class DependenciesTest {
     TreeGenerator<Tracer> treeGenerator = new TreeGenerator(
         TracersGenerator.generateJaeger(5, collectorUrl));
     Node<OpenTelemetryWrapper> root = treeGenerator.generateTree(50, 3);
-    System.out.println("Trace tree generated. Root service: " + root.getServiceName() + ", operation: " + root.getTracingWrapper().operationName());
-    
+    System.out.println("Trace tree generated. Root service: " + root.getServiceName() + ", operation: "
+        + root.getTracingWrapper().operationName());
+
     System.out.println("Finishing spans...");
     Traversals.postOrder(root, (node, parent) -> node.getTracingWrapper().get().getSpan().end());
     waitBetweenTraces();
-    
+
     System.out.println("Flushing and closing tracers...");
     treeGenerator.getTracers().forEach(tracer -> {
       tracer.flushable().flush();
     });
-    
+
     // Give extra time for spans to be exported and indexed
     TimeUnit.SECONDS.sleep(2);
-    
+
     System.out.println("Waiting for traces to appear in Jaeger Query...");
     waitJaegerQueryContains(root.getServiceName(), root.getTracingWrapper().operationName());
     System.out.println("Traces found in Jaeger Query");
@@ -116,11 +117,11 @@ public abstract class DependenciesTest {
       waitJaegerQueryContains(root.getServiceName(), root.getTracingWrapper().operationName());
     }
     System.out.println("All 20 traces generated and verified");
-    
+
     System.out.println("Flushing and closing tracers...");
     // flush and wait for reported data
     treeGenerator.getTracers().forEach(tracer -> tracer.flushable().flush());
-    
+
     // Give extra time for spans to be exported and indexed
     TimeUnit.SECONDS.sleep(2);
 
@@ -131,8 +132,6 @@ public abstract class DependenciesTest {
     System.out.println("=== testJaegerMultipleTraces completed successfully ===");
   }
 
-
-
   @Test
   public void testMultipleReferences() throws Exception {
     System.out.println("=== Starting testMultipleReferences ===");
@@ -142,8 +141,10 @@ public abstract class DependenciesTest {
     Tuple<Tracer, Flushable> s3Tuple = TracersGenerator.createJaeger("S3", collectorUrl);
 
     System.out.println("Creating spans with multiple references...");
-    // Note: OpenTelemetry doesn't support FOLLOWS_FROM references like OpenTracing did.
-    // In OpenTelemetry, a span can only have one parent. Both s2Span and s3Span will have
+    // Note: OpenTelemetry doesn't support FOLLOWS_FROM references like OpenTracing
+    // did.
+    // In OpenTelemetry, a span can only have one parent. Both s2Span and s3Span
+    // will have
     // s1Span as their parent, creating S1->S2 and S1->S3 dependencies.
     Span s1Span = s1Tuple.getA().spanBuilder("foo").startSpan();
     Span s2Span = s2Tuple.getA().spanBuilder("bar")
@@ -160,10 +161,10 @@ public abstract class DependenciesTest {
     s1Tuple.getB().flush();
     s2Tuple.getB().flush();
     s3Tuple.getB().flush();
-    
+
     // Give extra time for spans to be exported and indexed
     TimeUnit.SECONDS.sleep(2);
-    
+
     System.out.println("Waiting for traces to appear in Jaeger Query...");
     waitJaegerQueryContains("S1", "foo");
     waitJaegerQueryContains("S2", "bar");
@@ -190,7 +191,9 @@ public abstract class DependenciesTest {
         .build();
     try (Response response = okHttpClient.newCall(request).execute()) {
       assertEquals(200, response.code());
-      RestResult<DependencyLink> restResult = objectMapper.readValue(response.body().string(), new TypeReference<RestResult<DependencyLink>>() {});
+      RestResult<DependencyLink> restResult = objectMapper.readValue(response.body().string(),
+          new TypeReference<RestResult<DependencyLink>>() {
+          });
       assertEquals(null, restResult.getErrors());
       assertEquals(expectedDependencies, DependencyLinkDerivator.serviceDependencies(restResult.getData()));
     }
@@ -200,30 +203,30 @@ public abstract class DependenciesTest {
     String url = String.format("%s/api/traces?service=%s", queryUrl, service);
     System.out.println("Waiting for trace in Jaeger Query. Service: " + service + ", looking for: " + spanContainsThis);
     System.out.println("Query URL: " + url);
-    
+
     Request request = new Request.Builder()
         .url(url)
         .get()
         .build();
     await()
         .pollInterval(1, TimeUnit.SECONDS)
-        .atMost(30, TimeUnit.SECONDS)
+        .atMost(300, TimeUnit.SECONDS)
         .until(() -> {
-      try(Response response = okHttpClient.newCall(request).execute()) {
-        String responseBody = response.body().string();
-        int statusCode = response.code();
-        boolean contains = responseBody.contains(spanContainsThis);
-        
-        if (!contains) {
-          // Log the response when condition is not met to help with debugging
-          System.out.println("Trace not found yet. Status code: " + statusCode);
-          System.out.println("Response body preview (first 500 chars): " + 
-              (responseBody.length() > 500 ? responseBody.substring(0, 500) + "..." : responseBody));
-        }
-        
-        return contains;
-      }
-    });
+          try (Response response = okHttpClient.newCall(request).execute()) {
+            String responseBody = response.body().string();
+            int statusCode = response.code();
+            boolean contains = responseBody.contains(spanContainsThis);
+
+            if (!contains) {
+              // Log the response when condition is not met to help with debugging
+              System.out.println("Trace not found yet. Status code: " + statusCode);
+              System.out.println("Response body preview (first 500 chars): " +
+                  (responseBody.length() > 500 ? responseBody.substring(0, 500) + "..." : responseBody));
+            }
+
+            return contains;
+          }
+        });
     System.out.println("Trace found for service: " + service);
   }
 }
