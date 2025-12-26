@@ -19,6 +19,7 @@ COPY pom.xml $APP_HOME
 COPY jaeger-spark-dependencies $APP_HOME/jaeger-spark-dependencies
 COPY jaeger-spark-dependencies-cassandra $APP_HOME/jaeger-spark-dependencies-cassandra
 COPY jaeger-spark-dependencies-elasticsearch $APP_HOME/jaeger-spark-dependencies-elasticsearch
+COPY jaeger-spark-dependencies-opensearch $APP_HOME/jaeger-spark-dependencies-opensearch
 COPY jaeger-spark-dependencies-common $APP_HOME/jaeger-spark-dependencies-common
 COPY jaeger-spark-dependencies-test $APP_HOME/jaeger-spark-dependencies-test
 COPY .mvn $APP_HOME/.mvn
@@ -31,19 +32,23 @@ WORKDIR $APP_HOME
 # Elasticsearch variants: build only elasticsearch module with specific connector version
 # Unified variant: builds the mega-jar with both Cassandra and Elasticsearch support
 RUN --mount=type=cache,target=/root/.m2 \
-    if [ "$VARIANT" = "cassandra" ]; then \
-      ./mvnw package --batch-mode -Dlicense.skip=true -DskipTests -pl jaeger-spark-dependencies-cassandra -am && \
-      mkdir -p /tmp/jars && \
-      cp $APP_HOME/jaeger-spark-dependencies-cassandra/target/jaeger-spark-dependencies-cassandra-0.0.1-SNAPSHOT.jar /tmp/jars/app.jar; \
-    elif [ "$VARIANT" = "unified" ]; then \
-      ./mvnw package --batch-mode -Dlicense.skip=true -DskipTests -Dversion.elasticsearch.spark=${ELASTICSEARCH_SPARK_VERSION} && \
-      mkdir -p /tmp/jars && \
-      cp $APP_HOME/jaeger-spark-dependencies/target/jaeger-spark-dependencies-0.0.1-SNAPSHOT.jar /tmp/jars/app.jar; \
-    else \
-      ./mvnw package --batch-mode -Dlicense.skip=true -DskipTests -Dversion.elasticsearch.spark=${ELASTICSEARCH_SPARK_VERSION} -pl jaeger-spark-dependencies-elasticsearch -am && \
-      mkdir -p /tmp/jars && \
-      cp $APP_HOME/jaeger-spark-dependencies-elasticsearch/target/jaeger-spark-dependencies-elasticsearch-0.0.1-SNAPSHOT.jar /tmp/jars/app.jar; \
-    fi
+  if [ "$VARIANT" = "cassandra" ]; then \
+  ./mvnw package --batch-mode -Dlicense.skip=true -DskipTests -pl jaeger-spark-dependencies-cassandra -am && \
+  mkdir -p /tmp/jars && \
+  cp $APP_HOME/jaeger-spark-dependencies-cassandra/target/jaeger-spark-dependencies-cassandra-0.0.1-SNAPSHOT.jar /tmp/jars/app.jar; \
+  elif [ "$VARIANT" = "unified" ]; then \
+  ./mvnw package --batch-mode -Dlicense.skip=true -DskipTests -Dversion.elasticsearch.spark=${ELASTICSEARCH_SPARK_VERSION} && \
+  mkdir -p /tmp/jars && \
+  cp $APP_HOME/jaeger-spark-dependencies/target/jaeger-spark-dependencies-0.0.1-SNAPSHOT.jar /tmp/jars/app.jar; \
+  elif [ "$VARIANT" = "opensearch" ]; then \
+  ./mvnw package --batch-mode -Dlicense.skip=true -DskipTests -pl jaeger-spark-dependencies-opensearch -am && \
+  mkdir -p /tmp/jars && \
+  cp $APP_HOME/jaeger-spark-dependencies-opensearch/target/jaeger-spark-dependencies-opensearch-0.0.1-SNAPSHOT.jar /tmp/jars/app.jar; \
+  else \
+  ./mvnw package --batch-mode -Dlicense.skip=true -DskipTests -Dversion.elasticsearch.spark=${ELASTICSEARCH_SPARK_VERSION} -pl jaeger-spark-dependencies-elasticsearch -am && \
+  mkdir -p /tmp/jars && \
+  cp $APP_HOME/jaeger-spark-dependencies-elasticsearch/target/jaeger-spark-dependencies-elasticsearch-0.0.1-SNAPSHOT.jar /tmp/jars/app.jar; \
+  fi
 
 FROM eclipse-temurin:21-jre
 LABEL org.opencontainers.image.authors="The Jaeger Authors <cncf-jaeger-maintainers@lists.cncf.io>"
