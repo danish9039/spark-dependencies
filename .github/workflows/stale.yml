@@ -1,9 +1,23 @@
-name: 'Close stale issues and PRs'
+#
+# Copyright 2017 The Jaeger Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied. See the License for the specific language governing permissions and limitations under
+# the License.
+#
+
+name: "Close stale issues and PRs"
 
 on:
   schedule:
     # Run every Monday at 1:30 AM UTC
-    - cron: '30 1 * * 1'
+    - cron: "30 1 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -30,11 +44,11 @@ jobs:
             To keep it open either add a comment or the label `do-not-expire`.
           close-issue-message: >
             This issue has been automatically closed due to inactivity.
-          stale-issue-label: 'stale'
-          exempt-issue-labels: 'do-not-expire,help-wanted'
-          only-issue-labels: 'question'
-          
-          # Pull requests configuration  
+          stale-issue-label: "stale"
+          exempt-issue-labels: "do-not-expire,help-wanted"
+          only-issue-labels: "question"
+
+          # Pull requests configuration
           days-before-pr-stale: 60
           days-before-pr-close: 14
           stale-pr-message: >
@@ -45,9 +59,9 @@ jobs:
             This pull request has been automatically closed due to inactivity. You may re-open
             it if you need more time. We really appreciate your contribution and we are sorry
             that this has not been completed.
-          stale-pr-label: 'stale'
-          exempt-pr-labels: 'do-not-expire'
-          
+          stale-pr-label: "stale"
+          exempt-pr-labels: "do-not-expire"
+
           # General configuration
           operations-per-run: 100
           remove-stale-when-updated: true
