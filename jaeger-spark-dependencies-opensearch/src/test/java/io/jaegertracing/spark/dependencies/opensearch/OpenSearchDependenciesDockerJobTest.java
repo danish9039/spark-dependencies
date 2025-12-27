@@ -14,7 +14,7 @@ import static org.awaitility.Awaitility.await;
 public class OpenSearchDependenciesDockerJobTest extends OpenSearchDependenciesJobTest {
   private static String dependenciesJobTag() {
     String tag = System.getenv("SPARK_DEPENDENCIES_JOB_TAG");
-    if (tag == null || tag.isEmpty()) {
+    if (tag == null || tag.trim().isEmpty()) {
       throw new IllegalStateException(
           "SPARK_DEPENDENCIES_JOB_TAG environment variable is required but not set. " +
               "This variable must be set to ensure tests use the locally built Docker image.");
@@ -63,6 +63,14 @@ public class OpenSearchDependenciesDockerJobTest extends OpenSearchDependenciesJ
       await("spark-dependencies-job execution")
           .atMost(3, TimeUnit.MINUTES)
           .until(() -> !sparkDependenciesJob.isRunning());
+
+      Long exitCode = sparkDependenciesJob.getCurrentContainerInfo()
+          .getState()
+          .getExitCodeLong();
+
+      if (exitCode != null && exitCode != 0) {
+        throw new RuntimeException("Spark dependencies job failed with exit code: " + exitCode);
+      }
     } finally {
       System.out.println("::endgroup::");
     }

@@ -49,13 +49,13 @@ jobs:
             job_tag: "test-opensearch"
             variant: "opensearch"
             project: "jaeger-spark-dependencies-opensearch"
-            es_ver: "2.11.1"
+            es_ver: "2.14.0"
 
           - storage_name: "OpenSearch 3.x"
             job_tag: "test-opensearch-3"
             variant: "opensearch"
             project: "jaeger-spark-dependencies-opensearch"
-            es_ver: "2.14.0"
+            es_ver: "3.0.0"
 
     steps:
       - uses: actions/checkout@v4

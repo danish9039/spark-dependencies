@@ -18,7 +18,8 @@ import java.io.IOException;
  */
 public class KeyValueDeserializer extends StdDeserializer<KeyValue> {
 
-  // TODO Spark incorrectly serializes object mapper, therefore reinitializing here
+  // TODO Spark incorrectly serializes object mapper, therefore reinitializing
+  // here
   private ObjectMapper objectMapper = JsonHelper.configure(new ObjectMapper());
 
   public KeyValueDeserializer() {
@@ -37,7 +38,13 @@ public class KeyValueDeserializer extends StdDeserializer<KeyValue> {
     keyValue.setValueType(type);
 
     if ("string".equalsIgnoreCase(type)) {
-      keyValue.setValueString(node.get("value").asText());
+      JsonNode valueNode = node.get("value");
+      if (valueNode != null) {
+        keyValue.setValueString(valueNode.asText());
+      }
+    } else {
+      // TODO: KeyValue model only supports string value for now, other types are
+      // ignored
     }
 
     return keyValue;
