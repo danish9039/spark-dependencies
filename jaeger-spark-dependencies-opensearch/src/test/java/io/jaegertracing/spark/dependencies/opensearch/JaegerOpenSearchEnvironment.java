@@ -46,6 +46,7 @@ public class JaegerOpenSearchEnvironment {
         .waitingFor(new BoundPortHttpWaitStrategy(9200).forStatusCode(200))
         .withExposedPorts(9200)
         .withEnv("plugins.security.disabled", "true")
+        .withEnv("DISABLE_SECURITY_PLUGIN", "true")
         .withEnv("discovery.type", "single-node")
         .withEnv("network.bind_host", "opensearch")
         .withEnv("network.host", "0.0.0.0");
@@ -53,10 +54,12 @@ public class JaegerOpenSearchEnvironment {
 
     jaegerAll = new GenericContainer<>("jaegertracing/jaeger:" + jaegerVersion)
         .withNetwork(network)
-        .withClasspathResourceMapping("jaeger-v2-config-opensearch.yaml", "/etc/jaeger/config.yaml", org.testcontainers.containers.BindMode.READ_ONLY)
+        .withClasspathResourceMapping("jaeger-v2-config-opensearch.yaml", "/etc/jaeger/config.yaml",
+            org.testcontainers.containers.BindMode.READ_ONLY)
         .withCommand("--config", "/etc/jaeger/config.yaml")
         .withEnv(jaegerEnvs)
-        .waitingFor(new BoundPortHttpWaitStrategy(16687).forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode < 300))
+        .waitingFor(new BoundPortHttpWaitStrategy(16687)
+            .forStatusCodeMatching(statusCode -> statusCode >= 200 && statusCode < 300))
         .withExposedPorts(16687, 16686, 4317, 4318, 14268, 9411);
     jaegerAll.start();
 
@@ -65,25 +68,24 @@ public class JaegerOpenSearchEnvironment {
   }
 
   public void cleanUp(String[] spanIndex, String[] dependenciesIndex) throws IOException {
-      String matchAllQuery = "{\"query\": {\"match_all\":{} }}";
-      Request request = new Request.Builder()
-          .url(String.format("http://%s:%d/%s,%s/_delete_by_query?conflicts=proceed",
-              opensearch.getContainerIpAddress(),
-              opensearch.getMappedPort(9200),
-              // we don't use index prefix
-              spanIndex[0],
-              dependenciesIndex[0]))
-          .post(
-              RequestBody.create(MediaType.parse("application/json; charset=utf-8"), matchAllQuery))
-          .build();
+    String matchAllQuery = "{\"query\": {\"match_all\":{} }}";
+    Request request = new Request.Builder()
+        .url(String.format("http://%s:%d/%s,%s/_delete_by_query?conflicts=proceed",
+            opensearch.getContainerIpAddress(),
+            opensearch.getMappedPort(9200),
+            // we don't use index prefix
+            spanIndex[0],
+            dependenciesIndex[0]))
+        .post(
+            RequestBody.create(MediaType.parse("application/json; charset=utf-8"), matchAllQuery))
+        .build();
 
-
-      try (Response response =  okHttpClient.newCall(request).execute()) {
-        if (!response.isSuccessful()) {
-          String body = response.body().string();
-          throw new IllegalStateException(String.format("Could not remove data from OS: %s, %s", response, body));
-        }
+    try (Response response = okHttpClient.newCall(request).execute()) {
+      if (!response.isSuccessful()) {
+        String body = response.body().string();
+        throw new IllegalStateException(String.format("Could not remove data from OS: %s, %s", response, body));
       }
+    }
   }
 
   /**
