@@ -45,7 +45,6 @@ public class JaegerOpenSearchEnvironment {
         .withNetworkAliases("opensearch")
         .waitingFor(new BoundPortHttpWaitStrategy(9200).forStatusCode(200))
         .withExposedPorts(9200)
-        .withEnv("plugins.security.disabled", "true")
         .withEnv("DISABLE_SECURITY_PLUGIN", "true")
         .withEnv("discovery.type", "single-node")
         .withEnv("network.bind_host", "opensearch")
